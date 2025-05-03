@@ -1,0 +1,32 @@
+.container {
+    width: 1200px;
+    margin: 0 auto;
+    box-sizing: border-box;
+}
+
+.headerInfo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.block {
+    display: flex;
+    align-items: center;
+}
+
+.avgPeriodBlock_number {
+    color: #F38B00;
+}
+
+.avgPeriodBlock_text{
+    color: #667985;
+    width: 100%;
+}
+
+.ruble {
+    font-size: 0.5em;
+    color: #888888;
+    margin-left: 4px;
+  }
+  
