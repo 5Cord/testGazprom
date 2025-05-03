@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useEffect, useRef } from 'react';
 import * as echarts from 'echarts';
 import type { CSSProperties } from 'react';
@@ -20,13 +19,11 @@ export interface ReactEChartsProps {
   forceResize?: boolean;
 }
 
-
 export interface ILegendselectchangedParams {
   name: string;
   selected: Record<string, boolean>;
   type: string;
 }
-
 
 export function ReactECharts({
   option,
@@ -38,6 +35,7 @@ export function ReactECharts({
   forceResize = true,
 }: ReactEChartsProps): JSX.Element {
   const chartRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     // Initialize chart
     let chart: echarts.ECharts | undefined;
@@ -54,17 +52,16 @@ export function ReactECharts({
 
     window.addEventListener('resize', resizeChart);
 
-    let observer: MutationObserver | false | undefined = false;
-
-    if (forceResize) observer = forceResizeCharts(resizeChart);
+    if (forceResize) {
+      forceResizeCharts(resizeChart);
+    }
 
     // Return cleanup function
     return () => {
       chart?.dispose();
       window.removeEventListener('resize', resizeChart);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [theme]);
+  }, [theme, forceResize]); // <-- добавили forceResize в зависимости
 
   useEffect(() => {
     // Update chart
@@ -82,7 +79,6 @@ export function ReactECharts({
     // Update chart
     if (chartRef.current !== null) {
       const chart = echarts.getInstanceByDom(chartRef.current);
-
       loading === true ? chart?.showLoading() : chart?.hideLoading();
     }
   }, [loading, theme]);
