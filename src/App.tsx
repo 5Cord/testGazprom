@@ -18,8 +18,9 @@ function App() {
   const items: Item[] = ['$', '€', '¥'];
   const [value, setValue] = useState<Item | null>(items[0]);
 
+
   useEffect(() => {
-    fetch('https://6814e644225ff1af162a755a.mockapi.io/ExRate')
+    fetch(process.env.REACT_APP_API_URL as string)
       .then(response => response.json())
       .then((data: DataCur[]) => {
         setDataCurrencies(data);
@@ -54,8 +55,9 @@ function App() {
 
     const sum = filteredData.reduce((acc, curr) => acc + curr.value, 0);
     const avg = sum / filteredData.length;
-    return avg.toFixed(2);
+    return avg.toFixed(2).replace('.', ',');
   }, [dataCurrencies, value]);
+
 
   const chartOptions = useMemo(() => {
     if (!dataCurrencies.length || !value) return {};
@@ -68,8 +70,8 @@ function App() {
     const values = filteredData.map(d => d.value);
     const minValue = Math.min(...values);
     const maxValue = Math.max(...values);
-    const yMin = Math.floor(minValue - 5);
-    const yMax = Math.ceil(maxValue + 5);
+    const yMin = Math.floor(minValue - 10);
+    const yMax = Math.ceil(maxValue + 10);
 
     const series = [{
       name: indicatorName,
@@ -80,6 +82,16 @@ function App() {
       }),
       smooth: false,
       showSymbol: false,
+      emphasis: {
+        disabled: true,
+        itemStyle: {
+          opacity: 0,
+        },
+        label: {
+          show: false
+        },
+        symbol: 'none',
+      },
       itemStyle: {
         color: '#F38B00'
       },
@@ -89,9 +101,26 @@ function App() {
       }
     }];
 
+
     return {
       tooltip: {
         trigger: 'axis',
+        formatter: function (params: string | any[]) {
+          if (!params.length) return '';
+          const data = params[0];
+          const month = data.axisValue;
+          const value = data.data;
+          const indicatorName = data.seriesName;
+          return `
+                  <div class="${cl.tooltipWrapper}">
+                  <div class="${cl.tooltipMonth}">${month}</div>
+                    <div class="${cl.tooltipLine}">
+                      <span class="${cl.tooltipColor}" style="background-color:${data.color};"></span>
+                      <span class="${cl.tooltipLabel}">${indicatorName}</span>
+                      <b class="${cl.tooltipValue}">${value}₽</b>
+                    </div>
+                  </div>`;
+        }
       },
       grid: {
         left: 0,
@@ -132,7 +161,7 @@ function App() {
   return (
     <div className={cl.container}>
       <Theme preset={presetGpnDefault}>
-        <div className={cl.headerInfo}>
+        <div className={cl.container__header_info}>
           <h1>{getTitleText(value)}</h1>
           <ChoiceGroup
             value={value}
@@ -143,21 +172,21 @@ function App() {
             name="CurrencyChoice"
           />
         </div>
-        <div className={cl.block}>
+        <div className={cl.container__block}>
           <ReactECharts option={chartOptions} style={{ height: 400, width: '100%' }} />
-          <div className={cl.avgPeriodBlock}>
-            <Text className={cl.avgPeriodBlock_text} size="xl" weight="light">Среднее за период:</Text>
-            <Text className={cl.avgPeriodBlock_number} size="5xl">
-              {averageValue ?? 'Нет данных'}
-              {averageValue && (
-                <span className={cl.ruble}>₽</span>
-              )}
+          <div className={cl.container__avg_period}>
+            <Text className={cl.container__avg_period_text} size="2xl" weight="regular">
+              Среднее за период:
             </Text>
-
+            <Text className={cl.container__avg_period_number} size="5xl">
+              {averageValue ?? 'Нет данных'}
+              {averageValue && <span className={cl.container__ruble}>₽</span>}
+            </Text>
           </div>
         </div>
       </Theme>
     </div>
+
   );
 }
 

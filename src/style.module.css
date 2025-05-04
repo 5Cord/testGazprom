@@ -4,29 +4,62 @@
     box-sizing: border-box;
 }
 
-.headerInfo {
+.container__header_info {
     display: flex;
     align-items: center;
     justify-content: space-between;
 }
 
-.block {
+.container__block {
     display: flex;
     align-items: center;
 }
 
-.avgPeriodBlock_number {
-    color: #F38B00;
-}
-
-.avgPeriodBlock_text{
+.container__avg_period_text {
     color: #667985;
     width: 100%;
+    white-space: nowrap
 }
 
-.ruble {
+.container__avg_period_number {
+    color: #F38B00;
+    text-align: center;
+}
+
+.container__ruble {
     font-size: 0.5em;
     color: #888888;
     margin-left: 4px;
-  }
-  
+}
+
+
+.tooltipWrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.tooltipMonth {
+    font-weight: bold;
+}
+
+.tooltipLine {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.tooltipColor {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.tooltipLabel {
+    font-size: 14px;
+}
+
+.tooltipValue {
+    font-weight: bold;
+}
