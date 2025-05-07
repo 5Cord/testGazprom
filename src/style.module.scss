@@ -1,3 +1,9 @@
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  background-color: #f0f0f0;
+}
+
 :root {
   --line-color: #F38B00;
 }
@@ -9,6 +15,10 @@
 .container {
   width: 1200px;
   margin: 0 auto;
+  background-color: #ffffff; 
+  padding: 30px;
+  margin-top: 10%;
+  border-radius: 10px;
   box-sizing: border-box;
 
   &__header_info {
