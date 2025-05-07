@@ -1,208 +1,217 @@
-// Импорт необходимых модулей и внешних UI-компонентов
 import React, { useEffect, useMemo, useState } from 'react';
-import { ReactECharts } from './Echarts/ReactECharts'; // компонент для графика
-import { Theme, presetGpnDefault } from '@consta/uikit/Theme'; // тема из UI-кита
-import { ChoiceGroup } from '@consta/uikit/ChoiceGroup'; // компонент выбора валюты
-import { Text } from '@consta/uikit/Text'; // текстовый компонент
-import cl from './style.module.css'; // стили для оформления
+// Компонент графика на базе ECharts
+import { ReactECharts } from './Echarts/ReactECharts';
+// Компонент выбора валюты от Consta UI
+import { ChoiceGroup } from '@consta/uikit/ChoiceGroup';
+import { Text } from '@consta/uikit/Text';
+import { Loader } from '@consta/uikit/Loader';
+// Импорт стилей
+import cl from './style.module.css';
 
-// Тип данных, которые приходят с сервера
+// Тип данных, приходящих с сервера
 interface DataCur {
-  date: Date;
-  month: string;
-  indicator: string;
-  value: number;
+  date: string;        // дата ("2016-02-01")
+  month: string;       // месяц и год ("фев 2016")
+  indicator: string;   // название индикатора ("Курс доллара")
+  value: number;       // значения (числовое значение: 72)
 }
 
-type Item = string; // просто строка, которую используем как тип валюты
+// Определяем допустимые валюты
+type Item = '$' | '€' | '¥';
+const items: Item[] = ['$', '€', '¥'];
 
-function App() {
-  // Храним данные по валютам, которые получим с сервера
+// Соответствие валют их индикаторам (используем дженерик)
+const indicatorMap: Record<Item, string> = {
+  '$': 'Курс доллара',
+  '€': 'Курс евро',
+  '¥': 'Курс юаня',
+};
+
+// Заголовки для отображения на странице
+const titleMap: Record<Item, string> = {
+  '$': 'КУРС ДОЛЛАРА, $/₽',
+  '€': 'КУРС ЕВРО, €/₽',
+  '¥': 'КУРС ЮАНЯ, ¥/₽',
+};
+
+const App = () => {
+  // Состояние с исходными данными с сервера
   const [dataCurrencies, setDataCurrencies] = useState<DataCur[]>([]);
 
-  // Варианты валют, которые можно выбрать
-  const items: Item[] = ['$', '€', '¥'];
+  // Выбранная валюта
+  const [value, setValue] = useState<Item>(items[0]);
 
-  // Храним текущую выбранную валюту. По умолчанию — доллар
-  const [value, setValue] = useState<Item | null>(items[0]);
-
-  // Один раз при загрузке страницы получаем данные с сервера
+  // Хук для запроса данных при монтировании компонента
   useEffect(() => {
-    fetch(process.env.REACT_APP_API_URL as string) // адрес берём из переменной окружения
-      .then(response => response.json())
-      .then((data: DataCur[]) => {
-        setDataCurrencies(data); // сохраняем полученные данные
-      })
-      .catch(error => console.log(error)); // если ошибка — просто выведем в консоль
+    const fetchData = async () => {
+      try {
+        const res = await fetch(process.env.REACT_APP_API_URL as string);
+        const data: DataCur[] = await res.json();
+        setDataCurrencies(data);
+      } catch (error) {
+        console.error('Ошибка при получении данных:', error);
+      }
+    };
+
+    fetchData();
   }, []);
 
-  // Получаем название показателя 
-  const getIndicatorName = (symbol: string | null) => {
-    switch (symbol) {
-      case '$': return 'Курс доллара';
-      case '€': return 'Курс евро';
-      case '¥': return 'Курс юаня';
-      default: return 'Курс доллара'; // если вдруг null или что-то другое
-    }
-  };
-
-  // Получаем заголовок для отображения в UI
-  const getTitleText = (symbol: string | null) => {
-    switch (symbol) {
-      case '$': return 'КУРС ДОЛЛАРА, $/₽';
-      case '€': return 'КУРС ЕВРО, €/₽';
-      case '¥': return 'КУРС ЮАНЯ, ¥/₽';
-      default: return 'КУРС ДОЛЛАРА, $/₽';
-    }
-  };
-
-  // Считаем среднее значение за период для выбранной валюты
-  const averageValue = useMemo(() => {
-    if (!dataCurrencies.length || !value) return null;
-
-    const indicatorName = getIndicatorName(value);
-    const filteredData = dataCurrencies.filter(d => d.indicator === indicatorName);
-
-    if (!filteredData.length) return null;
-
-    const sum = filteredData.reduce((acc, curr) => acc + curr.value, 0);
-    const avg = sum / filteredData.length;
-
-    return avg.toFixed(2).replace('.', ','); // заменяем точку на запятую
+  // useMemo используется для фильтрации данных по выбранной валюте (на основе индикатора).
+  // Это позволяет избежать повторных вычислений при неизменных dataCurrencies и value.
+  const filteredData = useMemo(() => {
+    const indicator = indicatorMap[value];
+    return dataCurrencies.filter((d) => d.indicator === indicator);
   }, [dataCurrencies, value]);
 
-  // Настройки графика, которые будут переданы в ECharts
+  // useMemo используется для вычисления среднего значения курса за весь период.
+  // Это значение пересчитывается только при изменении отфильтрованных данных.
+  const averageValue = useMemo(() => {
+    if (!filteredData.length) return null;
+    const avg = filteredData.reduce((acc, d) => acc + d.value, 0) / filteredData.length;
+    return (Math.ceil(avg * 10) / 10).toFixed(1); // округление до 1 знака после запятой в большую сторону
+  }, [filteredData]);
+
+  // useMemo используется для создания конфигурации графика ECharts.
+  // Пересчитывается только если изменились данные или выбранная валюта.
   const chartOptions = useMemo(() => {
-    if (!dataCurrencies.length || !value) return {};
+    if (!filteredData.length) return {};
 
-    const indicatorName = getIndicatorName(value);
-    const filteredData = dataCurrencies.filter(d => d.indicator === indicatorName);
+    // Уникальные месяцы в порядке появления
+    const months = Array.from(new Set(filteredData.map((d) => d.month)));
 
-    // Получаем список месяцев без повторений
-    const months = Array.from(new Set(filteredData.map(d => d.month)));
+    // Значения курса для каждого месяца (по порядку)
+    const monthValueMap = months.map((month) => {
+      const item = filteredData.find((d) => d.month === month);
+      return item?.value ?? null;
+    });
 
-    // Определяем минимальные и максимальные значения для оси Y
+    // Определение минимального и максимального значений курса для оси Y
     const values = filteredData.map(d => d.value);
     const minValue = Math.min(...values);
     const maxValue = Math.max(...values);
-    const yMin = Math.floor(minValue - 10);
-    const yMax = Math.ceil(maxValue + 10);
 
-    // Строим график на основе месяцев и значений
-    const series = [{
-      name: indicatorName,
-      type: 'line',
-      data: months.map(month => {
-        const item = filteredData.find(d => d.month === month);
-        return item ? item.value : null;
-      }),
-      smooth: false, // не сглаживать график
-      showSymbol: false, // не показывать точки
-      emphasis: {
-        disabled: true, // отключаем всякие выделения
-        itemStyle: {
-          opacity: 0,
-        },
-        label: {
-          show: false
-        },
-        symbol: 'none',
-      },
-      itemStyle: {
-        color: '#F38B00'
-      },
-      lineStyle: {
-        width: 3,
-        color: '#F38B00'
-      }
-    }];
+    let yMin, yMax;
+    const step = Math.floor((maxValue - minValue) / 5);
 
-    // Возвращаем все настройки графика
+    // Немного настраиваем масштаб оси Y для лучшей визуализации
+    if (maxValue === values.at(-2)) {
+      yMax = maxValue;
+      yMin = Math.floor(minValue - step);
+    } else if (minValue === values.at(0)) {
+      yMax = Math.ceil(maxValue + step);
+      yMin = minValue;
+    } else {
+      yMax = Math.ceil(maxValue + step);
+      yMin = Math.floor(minValue - step);
+    }
+    const lineColor = getComputedStyle(document.documentElement).getPropertyValue('--line-color').trim();
     return {
+      // Настройка всплывающей подсказки (tooltip), появляется при наведении на точку графика
       tooltip: {
-        trigger: 'axis',
-        formatter: function (params: string | any[]) {
-          if (!params.length) return '';
-          const data = params[0];
-          const month = data.axisValue;
-          const value = data.data;
-          const indicatorName = data.seriesName;
+        trigger: 'axis', // Триггер по оси — показывать данные при наведении на ось X
+        formatter: (params: any[]) => {
+          if (!params?.length) return '';
+          const { axisValue: month, data: val, seriesName, color } = params[0];
+
+          // Кастомный tooltip
           return `
             <div class="${cl.tooltipWrapper}">
-              <div class="${cl.tooltipMonth}">${month}</div>
+              <div class="${cl.tooltipMonth}">${month} год</div>
               <div class="${cl.tooltipLine}">
-                <span class="${cl.tooltipColor}" style="background-color:${data.color};"></span>
-                <span class="${cl.tooltipLabel}">${indicatorName}</span>
-                <b class="${cl.tooltipValue}">${value}₽</b>
+                <span class="${cl.tooltipColor}" style="background-color:${color};"></span>
+                <span class="${cl.tooltipLabel}">${seriesName}</span>
+                <b class="${cl.tooltipValue}">${val}₽</b>
               </div>
             </div>`;
         }
       },
+      // Отступы "конейтера" с графиком
       grid: {
-        left: 0,
-        right: 0,
+        left: 30,
+        right: 30,
         top: 40,
         bottom: 40,
-        containLabel: true,
+        containLabel: true, // Учитывать размеры подписей осей при расчёте отступов
       },
+      // Настройка оси X (горизонтальной)
       xAxis: {
-        type: 'category',
-        data: months,
-        axisLine: {
-          show: false
-        },
-        axisTick: {
-          alignWithLabel: true,
-          lineStyle: {
-            color: '#9999990'
-          }
-        }
+        type: 'category', // Категориальная ось (не числовая: "месяц год")
+        data: months, // Массив месяцев по оси x
+        axisLine: { show: false }, // Скрыть линию оси
+        axisTick: { show: false }, // Скрыть засечки
+        boundaryGap: false, // Линия начинается с первой категории
       },
+
+      // Настройка оси Y (вертикальной)
       yAxis: {
-        type: 'value',
-        min: yMin,
-        max: yMax,
+        type: 'value', // Числовая ось
+        min: yMin, // Минимальное значение оси, рассчитывается динамически
+        max: yMax, // Максимальное значение оси
+        interval: (yMax - yMin) / 4, // Шаг между делениями (4 интервала)
+        axisLine: { show: false }, // Скрываем вертикальную линию оси
         splitLine: {
           lineStyle: {
-            type: 'dashed',
-            color: '#eee'
+            type: 'dashed', // Пунктирная линия сетки
+            color: '#00416633', // Цвет линии сетки (взять с макета фигмы)
           }
+        },
+        axisLabel: {
+          formatter: (val: number) => val === yMin ? '' : val, // Убираем подпись для нижней границы оси
         }
       },
-      series,
-    };
-  }, [dataCurrencies, value]);
 
-  // Сам компонент — то, что отрисовывается на экране
+      // Данные графика (серия данных)
+      series: [{
+        name: indicatorMap[value],  // Название серии, отображаемое в легенде и при наведении
+        type: 'line', // Тип графика — линия
+        data: monthValueMap, // Данные для построения графика, сгруппированные по месяцам
+        smooth: false, // Отключаем сглаживание линии
+        showSymbol: false, // Скрываем маркер на каждой точке данных на линии графика
+        emphasis: {
+          disabled: true, // Скрываем отображение точки при наведении на линии графика в точках значения
+          itemStyle: { opacity: 0 },
+          label: { show: false }, // Скрываем подписи при наведении
+          symbol: 'none', // Убираем символ (иконку точки) при наведении на всём графике
+        },
+        itemStyle: { color: lineColor }, // Стиль точки в тултипе
+        lineStyle: { width: 3, color: lineColor }, // Стиль линии — толщина и цвет
+      }],
+    };
+  }, [filteredData, value]);
+
   return (
     <div className={cl.container}>
-      <Theme preset={presetGpnDefault}>
-        <div className={cl.container__header_info}>
-          <h1>{getTitleText(value)}</h1>
-          <ChoiceGroup
-            value={value}
-            onChange={({ value }) => setValue(value)} //событие для смены валюты
-            items={items}
-            getItemLabel={(item) => item}
-            multiple={false}
-            name="CurrencyChoice"
-          />
-        </div>
-        <div className={cl.container__block}>
+      <div className={cl.container__header_info}>
+        <Text size="3xl" weight="bold" className={cl.title}>
+          {titleMap[value]}
+        </Text>
+        <ChoiceGroup
+          value={value}
+          onChange={({ value }) => value && setValue(value)} // обновление выбранной валюты
+          items={items}
+          getItemLabel={(item: string | number) => item}
+          multiple={false}
+          name="CurrencyChoice"
+        />
+      </div>
+      <div className={cl.container__block}>
+        {dataCurrencies.length === 0 ? (
+          <Loader size="m" className={cl.loader} />
+        ) : (
           <ReactECharts option={chartOptions} style={{ height: 400, width: '100%' }} />
-          <div className={cl.container__avg_period}>
-            <Text className={cl.container__avg_period_text} size="2xl" weight="regular">
-              Среднее за период:
-            </Text>
-            <Text className={cl.container__avg_period_number} size="5xl">
-              {averageValue ?? 'Нет данных'}
-              {averageValue && <span className={cl.container__ruble}>₽</span>}
-            </Text>
-          </div>
+        )}
+        <div className={cl.container__avg_period}>
+          <Text className={cl.container__avg_period_text} size="xl" weight="regular">
+            Среднее за период:
+          </Text>
+          <Text className={cl.container__avg_period_number} size="4xl">
+            {averageValue ?? 'Нет данных'}
+            {averageValue && <span className={cl.container__ruble}>₽</span>}
+          </Text>
         </div>
-      </Theme>
+      </div>
     </div>
   );
-}
+};
 
 export default App;
