@@ -124,5 +124,5 @@ export const useChartOptions = (data: DataCur[], value: Item, cl: Record<string,
         lineStyle: { width: 3, color: lineColor }, // Толщина линии и цвет
       }],
     };
-  }, [data, value, cl.tooltipColor, cl.tooltipLabel, cl.tooltipLine, cl]); // Добавлены отсутствующие зависимости
+  }, [data, value, cl]); // Добавлены отсутствующие зависимости
 };
