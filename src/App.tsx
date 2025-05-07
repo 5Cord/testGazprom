@@ -6,7 +6,7 @@ import { ChoiceGroup } from '@consta/uikit/ChoiceGroup';
 import { Text } from '@consta/uikit/Text';
 import { Loader } from '@consta/uikit/Loader';
 // Импорт стилей
-import cl from './style.module.css';
+import cl from './style.module.scss';
 
 // Тип данных, приходящих с сервера
 interface DataCur {

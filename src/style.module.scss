@@ -1,0 +1,79 @@
+:root {
+  --line-color: #F38B00;
+}
+
+.loader {
+  --loader-color-prop: var(--line-color);
+}
+
+.container {
+  width: 1200px;
+  margin: 0 auto;
+  box-sizing: border-box;
+
+  &__header_info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__block {
+    display: flex;
+    align-items: center;
+  }
+
+  &__avg_period {
+    &_text {
+      color: #667985;
+      width: 100%;
+      white-space: nowrap;
+    }
+
+    &_number {
+      color: var(--line-color);
+      text-align: center;
+      margin-top: 20px;
+    }
+  }
+
+  &__ruble {
+    font-size: 0.5em;
+    color: #888888;
+    margin-left: 4px;
+  }
+}
+
+.tooltipMonth {
+  font-weight: bold;
+}
+
+.tooltipWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  &Month {
+    font-weight: bold;
+  }
+}
+
+.tooltipLine {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tooltipColor {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.tooltipLabel {
+  font-size: 14px;
+}
+
+.tooltipValue {
+  font-weight: bold;
+}
