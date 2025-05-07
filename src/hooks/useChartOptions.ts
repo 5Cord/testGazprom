@@ -67,7 +67,7 @@ export const useChartOptions = (data: DataCur[], value: Item, cl: Record<string,
           const { axisValue: month, data: val, seriesName, color } = params[0];
 
           // Формируем HTML для подсказки
-          return `
+          return ` 
             <div class="${cl.tooltipWrapper}">
               <div class="${cl.tooltipMonth}">${month} год</div>
               <div class="${cl.tooltipLine}">
@@ -124,5 +124,5 @@ export const useChartOptions = (data: DataCur[], value: Item, cl: Record<string,
         lineStyle: { width: 3, color: lineColor }, // Толщина линии и цвет
       }],
     };
-  }, [data, value]); // Хук будет пересчитывать опции, когда изменяются данные или выбранная валюта
+  }, [data, value, cl.tooltipColor, cl.tooltipLabel, cl.tooltipLine, cl]); // Добавлены отсутствующие зависимости
 };
